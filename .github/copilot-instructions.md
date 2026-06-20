@@ -8,10 +8,7 @@ Single-page dashboard for the PRO3 racing league. SvelteKit 2 + Svelte 5 on Clou
 - **TypeScript strict** (`tsconfig.json`), `moduleResolution: bundler`, `checkJs` on.
 - **Vite 8** build tooling.
 - **Cloudflare Pages** deploy target via `@sveltejs/adapter-cloudflare`. Bindings live in `wrangler.toml` and are typed in `src/app.d.ts` under `App.Platform`. `npm run dev` proxies the wrangler config so `event.platform.env` / `waitUntil` work locally.
-- **Vitest** for tests, configured in `vite.config.ts` with two projects:
-  - `server` — Node environment, picks up `src/**/*.{test,spec}.ts`
-  - `client` — Playwright/Chromium browser, picks up `src/**/*.svelte.{test,spec}.ts`
-  - `expect.requireAssertions` is on — every test must have at least one assertion.
+- **Vitest** for tests. See `docs/testing.md` for the full layered strategy, conventions, and TDD loop.
 
 ## Commands
 
@@ -20,8 +17,7 @@ Single-page dashboard for the PRO3 racing league. SvelteKit 2 + Svelte 5 on Clou
 - `npm run check` — `svelte-kit sync && svelte-check`. This is the closest thing to a typecheck; run it after non-trivial changes.
 - `npm run lint` — `prettier --check . && eslint .`.
 - `npm run format` — Prettier write.
-- `npm run test` — Vitest single-pass run (all projects). Use `-- --project=server` or `-- --project=client` to scope, and `-- <pattern>` to filter (e.g. `npm run test -- icscc`).
-- `npm run test:unit` — Vitest in watch mode.
+- `npm run test` — Vitest. See `docs/testing.md` for invocation patterns (project filters, name patterns, watch mode).
 
 ### Local node toolchain (this machine)
 
@@ -31,34 +27,11 @@ Node/npm are installed via nvm and **not on PATH in non-interactive shells**. So
 source "$HOME/.nvm/nvm.sh" && nvm use default
 ```
 
-## Test-driven development
+## Testing
 
-**This project follows TDD.** When asked to add or change behavior:
+This project follows **TDD**: write the failing test first, watch it fail for the right reason, write the smallest implementation that passes, refactor.
 
-1. **Write the test first.** Capture the expected behavior as a failing test before touching implementation code. Let the test name and assertions force you to define the contract up front.
-2. **Run it and watch it fail** for the right reason (assertion failure, not a compile/import error). A red test you didn't expect tells you the contract is wrong before you've written any code.
-3. **Write the smallest implementation** that makes the test pass. Resist scope creep — additional behavior gets additional tests first.
-4. **Refactor** with the green test as a safety net.
-
-Lean on the framework to guide design:
-
-- **Pure functions first.** The `src/lib/server/icscc.ts` layer is deliberately framework-free so tests can call `normalize(rawJson, season)` directly with fixtures from `src/lib/server/__fixtures__/` — no HTTP, no mocking. Mirror this split for any new logic: if it's hard to test, it probably belongs in a pure module rather than inside a `+server.ts` / `+page.server.ts`.
-- **Test the wire contract, not the upstream shape.** Assertions should target `PointsResponse` (the type in `src/lib/types.ts`). That keeps tests stable when ICSCC changes its payload and surfaces breaking changes to clients immediately.
-- **Cover the upstream quirks explicitly.** Every quirk listed under "Upstream (ICSCC) quirks" deserves a regression test — year patching, ms↔s lap-time conversion, integer-vs-raw points, PRO3 filtering, eligibility/`null` position. These are exactly the behaviors that will silently regress.
-- **HTTP route tests** belong at the `+server.ts` layer and should focus on what's unique to it: param validation (400s, range errors), ETag forwarding (304 passthrough), and `Cache-Control` headers. Don't re-test normalization here.
-
-**No test runner is checked in yet.** Vitest is the canonical choice for SvelteKit/Vite projects — install it (with `@vitest/ui` optional) and wire `npm run test` / `npm run test:watch` scripts the first time TDD is needed. Add a `vitest.config.ts` that reuses the existing Vite config so `$lib` aliases resolve.
-
-### Test layout & conventions
-
-- **Co-locate tests with the code they test.** `src/lib/server/icscc.ts` → `src/lib/server/icscc.test.ts`. The vitest globs in `vite.config.ts` require tests to live under `src/`.
-- **Component tests use the `.svelte.test.ts` suffix** and run in the `client` (browser) project. Plain `.test.ts` runs in the `server` (Node) project.
-- **Fixtures live in `__fixtures__/` directories next to their tests.** The double-underscore name is a Vitest/Jest convention — it's never matched by the test glob even though it sits inside `src/`. Captured upstream payloads belong there (e.g. `src/lib/server/__fixtures__/icscc-2026.json`) and are excluded from Prettier via `.prettierignore`. Don't import fixtures from `scratch/` — that directory is gitignored exploration scratch space.
-- **Fixtures are the ground truth.** When asserting on normalization, prefer asserting on real captured upstream payloads over hand-crafted minimal inputs. The 2026 fixture has the year bug; the 2025 fixture is a fully-completed historic season — together they cover most quirk regressions.
-
-### Future option: Playwright MCP
-
-When UI work starts in earnest, register `@playwright/mcp` (`/mcp` in Copilot CLI) so the agent can drive a real browser against `npm run dev` — author component flows live, then transcribe them into `*.svelte.test.ts`. Don't install it preemptively; it adds no value while only the SvelteKit starter page exists. This is orthogonal to (and lighter than) adding the Playwright Test runner for committed E2E suites — only add that if/when we want a separate E2E layer in CI.
+See **[`docs/testing.md`](../docs/testing.md)** for the canonical strategy: layer-by-layer breakdown (pure / HTTP / component / page integration / E2E), conventions (co-location, `__fixtures__/`, fixtures-as-ground-truth), the wire-contract-not-upstream-shape rule, the Playwright MCP plan, and CI ordering. Keep that document in sync when adding a new test surface — do not duplicate its content here.
 
 The app is a SvelteKit project with a small server-side API that proxies and normalizes upstream ICSCC data. The work is broken into "slices":
 
