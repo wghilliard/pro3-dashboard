@@ -200,7 +200,8 @@ function patchYear(
 	season: number,
 	onPatch: () => void
 ): IsoDate {
-	let { year, month, day } = parts;
+	let { year } = parts;
+	const { month, day } = parts;
 	if (year !== season) {
 		year = season;
 		onPatch();
@@ -209,8 +210,18 @@ function patchYear(
 }
 
 const MONTHS: Record<string, number> = {
-	jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
-	jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12
+	jan: 1,
+	feb: 2,
+	mar: 3,
+	apr: 4,
+	may: 5,
+	jun: 6,
+	jul: 7,
+	aug: 8,
+	sep: 9,
+	oct: 10,
+	nov: 11,
+	dec: 12
 };
 
 const TRACK_NAMES: Record<string, string> = {

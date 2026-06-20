@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Test fixtures — large captured upstream payloads, not for formatting.
+src/lib/server/__fixtures__/

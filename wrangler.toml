@@ -1,0 +1,18 @@
+#:schema node_modules/wrangler/config-schema.json
+# Cloudflare Pages config for pro3-dashboard.
+# This file is consumed by:
+#   - `wrangler pages dev` for local emulation
+#   - `@sveltejs/adapter-cloudflare`'s platformProxy in `npm run dev`,
+#     so `event.platform.env` / `waitUntil` work in development
+#
+# Slice 2 will add KV bindings here; for Slice 1 we only need the basics.
+
+name = "pro3-dashboard"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
+# Bindings will be added here as features land, e.g.:
+# [[kv_namespaces]]
+# binding = "SCHEDULE_KV"
+# id = "<created via: wrangler kv:namespace create SCHEDULE_KV>"

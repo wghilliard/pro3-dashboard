@@ -13,9 +13,11 @@ declare global {
 		 * for the schedule scrape; for Slice 1 nothing is bound.
 		 */
 		interface Platform {
-			env: {
-				// SCHEDULE_KV: KVNamespace; // (Slice 2)
-			};
+			/**
+			 * Cloudflare bindings declared in `wrangler.toml`.
+			 * Empty in Slice 1; Slice 2 will add `SCHEDULE_KV: KVNamespace`.
+			 */
+			env: Record<string, unknown>;
 			context: {
 				waitUntil(promise: Promise<unknown>): void;
 			};
